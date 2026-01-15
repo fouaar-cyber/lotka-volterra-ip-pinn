@@ -7,9 +7,9 @@ authors:
     family-names: OUAAR
     affiliation: Mohamed Khider University, Biskra, Algeria
     email: f.ouaar@univ-biskra.dz
-    orcid: "https://orcid.org/0009-0008-2785-6462"  # TODO: Replace with your real ORCID
+    orcid: "https://orcid.org/0009-0008-2785-6462"  
 repository-code: "https://github.com/fouaar-cyber/lotka-volterra-ip-pinn"
-url: "https://doi.org/10.5281/zenodo.XXXXXXX"  # TODO: Update after Zenodo release
+url: "https://doi.org/10.5281/zenodo.18259016"  
 keywords:
   - "Physics-informed neural networks"
   - "Invariant preservation"

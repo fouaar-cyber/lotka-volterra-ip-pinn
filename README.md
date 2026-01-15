@@ -2,6 +2,8 @@
 
 A **reproducible** framework for invariant-preserving physics-informed neural networks (IP-PINN), validated on Lotka–Volterra systems with rigorous statistical protocols.
 
+https://doi.org/10.5281/zenodo.18259016
+
 ## 🎯 What This Repository Provides
 
 - **Complete experimental pipeline** with 15 independent runs per configuration
@@ -63,6 +65,7 @@ python ip_pinn_vector_figures.py
     Seeding: Deterministic (fixed seeds = 42 to 3031)
     Data: All 15-run raw data archived in JSON
     Figures: Vector PDFs with editable text
+
 
 ### 📧 Contact
 Fatima OUAAR
