@@ -1,0 +1,3 @@
+,mean_drift,std_drift,cv
+Baseline PINN,71.210614,11.419871,0.160368
+IP-PINN,0.077532,0.135766,1.751096

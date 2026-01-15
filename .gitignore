@@ -1,0 +1,57 @@
+# PYTHON FORTRESS
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+venv/
+env/
+ENV/
+
+# STATISTICAL ARTIFACTS
+*.aux
+*.bbl
+*.blg
+*.log
+*.out
+*.toc
+*.spl
+*.synctex.gz
+*.fdb_latexmk
+*.fls
+
+# BUILD GENERALS
+build/
+dist/
+*.egg-info/
+
+# BATTLEFIELD DATA (keep raw_data.json ONLY)
+*.pkl
+*.h5
+*.hdf5
+*.npy
+*.npz
+
+# VISUAL INTELLIGENCE (keep figures/*.pdf ONLY)
+*.png
+*.jpg
+*.jpeg
+*.eps
+*.svg
+!figures/*.pdf
+
+# EDITORIAL OVERWATCH
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OPERATING SYSTEM SCRAPS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# JOURNAL SUBMISSION ARMOR
+submission_package.zip
+ouaar_paper.pdf
+*.docx
