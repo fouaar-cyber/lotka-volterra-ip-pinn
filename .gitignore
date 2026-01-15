@@ -1,3 +1,27 @@
+# NEVER COMMIT THESE
+venv/
+venv_stable/
+env/
+ENV/
+
+# LaTeX build artifacts
+*.aux
+*.bbl
+*.blg
+*.log
+*.out
+*.spl
+*.synctex.gz
+texput.log
+*.fdb_latexmk
+*.fls
+*.toc
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
 # PYTHON FORTRESS
 __pycache__/
 *.py[cod]
