@@ -78,4 +78,5 @@ desktop.ini
 # JOURNAL SUBMISSION ARMOR
 submission_package.zip
 ouaar_paper.pdf
-*.docx
+*.docx"venv_new/" 
+"venv/" 
