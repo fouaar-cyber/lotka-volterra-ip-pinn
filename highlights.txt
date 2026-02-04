@@ -1,0 +1,6 @@
+• Hard structural constraints achieve 72% reduction in invariant drift
+• Multiplicative projection onto manifold outperforms soft penalties by 4.5×
+• Statistically validated: p < 10⁻¹¹, Cohen's d = 5.03, n = 15 runs
+• Three-way comparison: Baseline vs. Soft IP-PINN vs. Hard IP-PINN
+• Physically consistent: invariant target H₀ from initial conditions, not learned
+• Reproducible: deterministic seeding, complete data archival

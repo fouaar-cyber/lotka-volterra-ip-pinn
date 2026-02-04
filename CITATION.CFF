@@ -1,32 +1,26 @@
+# 2. **CITATION.cff** (Updated)
+
 cff-version: 1.2.0
-title: "Statistically Validated Invariant-Preserving Physics-Informed Neural Networks for Conservative Dynamical Systems"
-message: "If you use this software, please cite it using the metadata from this file."
+title: "Hard-Constrained Invariant-Preserving Neural Networks for Conservative Dynamical Systems: A Statistically Validated Approach"
+message: "If you use this software, please cite it as below."
 type: software
 authors:
-  - given-names: Fatima
-    family-names: OUAAR
-    affiliation: Mohamed Khider University, Biskra, Algeria
-    email: f.ouaar@univ-biskra.dz
-    orcid: "https://orcid.org/0009-0008-2785-6462"  
+  - family-names: "OUAAR"
+    given-names: "Fatima"
+    affiliation: "Laboratory of Mathematical Analysis, Probability and Optimization, Mohamed Khider University, Biskra, Algeria"
 repository-code: "https://github.com/fouaar-cyber/lotka-volterra-ip-pinn"
-url: "https://doi.org/10.5281/zenodo.18259016"  
+url: "https://doi.org/10.5281/zenodo.18259016"
+repository-artifact: "https://doi.org/10.5281/zenodo.18259016"
 keywords:
-  - "Physics-informed neural networks"
-  - "Invariant preservation"
+  - "physics-informed neural networks"
+  - "hard constraints"
+  - "invariant preservation"
+  - "conservative dynamical systems"
   - "Lotka-Volterra systems"
-  - "Statistical validation"
-  - "Reproducible research"
-  - "Long-time integration"
-  - "Journal of Computational Physics"
+  - "statistical validation"
+  - "reproducible research"
+  - "manifold projection"
 license: MIT
-version: "1.0"  
-date-released: "2026-01-15"  
-preferred-citation:
-  type: article
-  title: "Statistically Validated Invariant-Preserving Physics-Informed Neural Networks for Conservative Dynamical Systems"
-  authors:
-    - given-names: Fatima
-      family-names: OUAAR
-  journal: "Journal of Computational Physics"
-  year: 2026
-  doi: "10.1016/j.jcp.2026.XXXXX"  # TODO: Update after paper acceptance
+license-url: "https://opensource.org/licenses/MIT"
+version: 2.0
+date-released: 2026-02-03

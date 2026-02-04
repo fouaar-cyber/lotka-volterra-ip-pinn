@@ -1,8 +1,15 @@
-# NEVER COMMIT THESE
+# Python environments
 venv/
 venv_stable/
+venv_new/
 env/
 ENV/
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
 
 # LaTeX build artifacts
 *.aux
@@ -12,50 +19,25 @@ ENV/
 *.out
 *.spl
 *.synctex.gz
+*.fdb_latexmk
+*.fls
+*.toc
 texput.log
-*.fdb_latexmk
-*.fls
-*.toc
 
-# Python bytecode
-__pycache__/
-*.py[cod]
-*$py.class
-
-# PYTHON FORTRESS
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-venv/
-env/
-ENV/
-
-# STATISTICAL ARTIFACTS
-*.aux
-*.bbl
-*.blg
-*.log
-*.out
-*.toc
-*.spl
-*.synctex.gz
-*.fdb_latexmk
-*.fls
-
-# BUILD GENERALS
+# Build directories
 build/
 dist/
 *.egg-info/
 
-# BATTLEFIELD DATA (keep raw_data.json ONLY)
+# Data files (keep JSON results)
 *.pkl
 *.h5
 *.hdf5
 *.npy
 *.npz
+!data/*.json
 
-# VISUAL INTELLIGENCE (keep figures/*.pdf ONLY)
+# Figure formats (keep PDF only)
 *.png
 *.jpg
 *.jpeg
@@ -63,20 +45,19 @@ dist/
 *.svg
 !figures/*.pdf
 
-# EDITORIAL OVERWATCH
+# IDE files
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
 
-# OPERATING SYSTEM SCRAPS
+# OS files
 .DS_Store
 Thumbs.db
 desktop.ini
 
-# JOURNAL SUBMISSION ARMOR
+# Submission materials
 submission_package.zip
-ouaar_paper.pdf
-*.docx"venv_new/" 
-"venv/" 
+*_submission.pdf
+*.docx
