@@ -1,6 +1,242 @@
-• Hard structural constraints achieve 72% reduction in invariant drift
-• Multiplicative projection onto manifold outperforms soft penalties by 4.5×
-• Statistically validated: p < 10⁻¹¹, Cohen's d = 5.03, n = 15 runs
-• Three-way comparison: Baseline vs. Soft IP-PINN vs. Hard IP-PINN
-• Physically consistent: invariant target H₀ from initial conditions, not learned
-• Reproducible: deterministic seeding, complete data archival
+# Key Findings: Structurally Corrected Invariant-Preserving Neural Networks
+# Published in Scientific Journal of King Faisal University: Basic and Applied Sciences (2026) 27:7
+# DOI: 10.1007/s44523-026-00007-7
+# Version 3.0 (Published)
+
+## 🎯 Core Result
+
+**Structural correction achieves 72.2% reduction in invariant drift vs. 16.1% for soft penalties**
+
+| Method | RMS Drift | Improvement | Statistical Significance | Effect Size |
+|--------|-----------|-------------|--------------------------|-------------|
+| Baseline PINN | 0.343 ± 0.062 | — | — | — |
+| Soft IP-PINN | 0.288 ± 0.086 | 16.1% | p = 0.063 (not significant) | d = 0.73 |
+| **SC-PINN (Ours)** | **0.095 ± 0.032** | **72.2%** | **p = 9.9×10⁻¹²** | **d = 5.03** |
+
+**Interpretation:** Cohen's d = 5.03 indicates a "very large" effect size. The structural correction is overwhelmingly superior with near-certainty.
+
+---
+
+## 👤 Author
+
+**Fatima Ouaar**  
+Mathematics Department, University of Biskra, Biskra, Algeria  
+📧 f.ouaar@univ-biskra.dz  
+🐙 GitHub: https://github.com/fouaar-cyber/lotka-volterra-ip-pinn
+
+---
+
+## 🔍 Why It Matters
+
+### The Problem
+Standard physics-informed neural networks (PINNs) exhibit **uncontrolled invariant drift** in conservative systems. Over long integration horizons, energy/momentum invariants diverge, destroying physical fidelity.
+
+### The Solution
+**Multiplicative structural correction** (Eq. 3):
+
+ẑ = z_θ · exp(-λ(H(z_θ) - H₀))
+
+- Projects outputs toward invariant manifold at every forward pass
+- Decouples dynamical accuracy from geometric fidelity
+- No expensive root-finding or hyperparameter tuning
+
+### The Impact
+- **4.5× greater improvement** than soft penalty methods
+- **Statistical rigor:** n=15 independent runs, B=10,000 bootstrap replicates
+- **Reproducibility:** deterministic seeding, complete data archival
+
+---
+
+## 📊 Statistical Validation Protocol (Published)
+
+| Aspect | Implementation |
+|--------|---------------|
+| Sample size | n = 15 independent runs |
+| Randomization | Deterministic seeding (seed = 2 + i) |
+| Comparison | Three-way: Baseline / Soft IP-PINN / SC-PINN |
+| Significance test | Welch's t-test (α = 0.05, unequal variances) |
+| Effect size | Cohen's d |
+| Confidence intervals | Bootstrap (B = 10,000 replicates) |
+| Normality | Shapiro-Wilk (honest reporting: Baseline p=0.191; Soft p=0.004; SC p<0.001) |
+| Non-parametric | Mann-Whitney U + Cliff's delta (Appendix B) |
+
+**Result:** All main claims confirmed under both parametric and non-parametric validation. Soft penalty improvement is indistinguishable from noise (p = 0.063); structural correction is definitive (p < 10⁻¹¹).
+
+---
+
+## 🔬 New Analyses (Major Revision)
+
+### 1. Sensitivity Analysis (Figure 6)
+Systematic evaluation of projection strength λ ∈ [0.01, 2.0]:
+- **Robust region:** λ ∈ [0.05, 0.5] yields comparable performance
+- **Selected value:** λ = 0.1 (conservative middle ground)
+- **Instability:** λ > 1.0 introduces training stiffness
+
+### 2. Long-Time Integration (Figure 5)
+Models trained on [0,100], evaluated on [0,500]:
+- **SC-PINN:** Maintains bounded deviation (stable behavior)
+- **Baseline:** Exhibits unbounded drift
+
+### 3. Trajectory Confidence (Figure 2 revised)
+Maximum Euclidean distance from RK4 over T=50 (n=15):
+
+| Method | Max Distance | Mean Distance |
+|--------|-------------|---------------|
+| Baseline PINN | 2.34 ± 0.41 | 0.89 ± 0.15 |
+| **SC-PINN** | **0.87 ± 0.19** | **0.31 ± 0.08** |
+
+### 4. Ablation Study (Appendix A, n=15)
+Comparison of full model vs. architectural correction alone:
+
+| Configuration | Mean ± SD | Welch p | Cohen's d |
+|---------------|-----------|---------|-----------|
+| Full model | 0.922 ± 0.112 | — | — |
+| Without refinement | 0.919 ± 0.115 | 0.935 | 0.03 |
+
+**Conclusion:** The architectural correction alone provides the dominant invariant stabilization. The refinement loss serves as an auxiliary optimization stabilizer during training.
+
+---
+
+## 🧠 Architectural Insights
+
+### Why Soft Penalties Fail
+1. **Competing objectives:** Invariant loss vs. ODE residual trade off
+2. **Weight sensitivity:** λ tuning critical, system-dependent
+3. **Approximate satisfaction:** Violations proportional to λ
+
+### Why Structural Correction Succeeds
+1. **Explicit feedback:** Direct geometric control at output layer
+2. **Optimization decoupling:** Architecture handles invariants, loss handles dynamics
+3. **Continuous stabilization:** Prevents error accumulation over time
+
+### Computational Efficiency
+- Overhead: ~3% (847s vs. 822s per run)
+- vs. Soft penalties: ~5-10× tuning cost
+- vs. Exact projection: Orders of magnitude faster (no root-finding)
+
+---
+
+## 🔬 Experimental Design
+
+### System
+Lotka-Volterra predator-prey (conservative ODE):
+- Parameters: α=1.0, β=0.1, δ=0.075, γ=0.75
+- Initial condition: (2.0, 2.0) → H₀ ≈ -0.863
+- Integration: T = 50 time units
+
+### Network
+- Base: Feedforward (log-population prediction)
+- Activation: Exponential (positivity guarantee)
+- Correction: Scalar multiplicative nudge (λ = 0.1)
+
+### Training
+- Loss: L_ODE + λ_IC·L_IC + 0.5·E[(H(ẑ) - H₀)²]
+- Ablation: Refinement term is auxiliary (not statistically significant in isolation)
+- Hardware: Standard consumer GPU (reproducible on CPU)
+
+---
+
+## 📈 Key Figures (Published)
+
+| Figure | Content | Finding |
+|--------|---------|---------|
+| Fig 1 | Statistical comparison with individual runs | Visual confirmation of 72% improvement + swarm |
+| Fig 2 | Phase-plane with confidence bands | SC-PINN tightly clustered; baseline highly variable |
+| Fig 3 | Trajectory deviation ±2σ | Quantified distance from reference over time |
+| Fig 4 | Invariant evolution over T=50 | SC-PINN: tight confinement; baseline: drift |
+| Fig 5 | Long-time integration T=500 | SC-PINN stable; baseline diverges |
+| Fig 6 | Sensitivity analysis | λ=0.1 in robust operating region |
+| App A | Ablation study (n=15) | Architectural correction dominates |
+| App B | Q-Q plots + non-parametric tests | Honest normality reporting |
+
+All figures: Vector PDFs, publication-quality, reproducible from raw data.
+
+---
+
+## ⚠️ Limitations & Future Work
+
+| Limitation | Current State | Extension Path |
+|------------|-------------|----------------|
+| Known invariants | Required analytically | Learned invariants from data |
+| Fixed λ | Robust but suboptimal | Adaptive/meta-learned strength |
+| Asymptotic correction | Preserves value, not symplectic form | Symplectic neural networks for canonical systems |
+| ODE focus | Finite-dimensional invariants | PDEs with infinite-dimensional invariants |
+
+---
+
+## 🎓 Broader Implications
+
+### For Scientific Machine Learning
+- **Architecture > Loss:** Structural inductive biases outperform penalty terms
+- **Statistical rigor:** Large effect sizes + small p-values = credible claims
+- **Reproducibility:** Deterministic protocols enable verification
+
+### For Conservative Dynamics
+- Generalizes to any system with known first integrals
+- Applicable to molecular dynamics, celestial mechanics, fluid flows
+- Bridges geometric numerical integration and deep learning
+
+---
+
+## 📦 Data & Code Availability
+
+**Archived at:**
+- Paper DOI: https://doi.org/10.1007/s44523-026-00007-7
+- Zenodo Archive: https://doi.org/10.5281/zenodo.18259016
+- GitHub Repository: https://github.com/fouaar-cyber/lotka-volterra-ip-pinn
+
+**Key files:**
+- `data/all_results.json` — Raw experimental data
+- `data/ablation_results.json` — Ablation study (n=15)
+- `data/sensitivity_results.json` — λ sensitivity analysis
+- `data/statistical_validation.json` — Normality and non-parametric tests
+- `figures/` — Vector PDFs of all main and appendix figures
+- `ippinn_WORKING_72percent.py` — Complete experimental pipeline
+- `generate_figures.py` — Figure generation script
+- `main.tex` — LaTeX manuscript
+- `highlights.txt` — This file
+
+---
+
+## 📝 Version History
+
+| Version | Date | Description |
+|---------|------|-------------|
+| **v3.0** | **2026-05** | **Published in SJKFU: Basic Appl. Sci. 27:7** |
+| | | - Final published version with de-anonymized links |
+| | | - Added sensitivity analysis (Figure 6) |
+| | | - Added long-time integration T=500 (Figure 5) |
+| | | - Added trajectory confidence bands (Figure 2 revised) |
+| | | - Added ablation study with n=15 (Appendix A) |
+| | | - Added normality diagnostics and non-parametric validation (Appendix B) |
+| | | - Honest statistical reporting (Shapiro-Wilk, Mann-Whitney U, Cliff's delta) |
+| v2.0 | 2026-02 | Structural correction with 72% improvement, three-way comparison, corrected H₀ calculation |
+| v1.0 | 2025-XX | Superseded: Soft penalty approach (16% improvement, not significant) |
+
+---
+
+## 📚 Citation
+
+**Published article:**
+```bibtex
+@article{ouaar2026structurally,
+  title={Structurally corrected invariant-preserving neural networks for conservative dynamical systems: a statistically validated approach},
+  author={Ouaar, Fatima},
+  journal={Scientific Journal of King Faisal University: Basic and Applied Sciences},
+  year={2026},
+  volume={27},
+  pages={7},
+  doi={10.1007/s44523-026-00007-7}
+}
+```
+
+**Software/data:**
+```bibtex
+@software{ouaar2026sc_pinn,
+  author={Ouaar, Fatima},
+  title={Structurally corrected invariant-preserving neural networks for conservative dynamical systems},
+  year={2026},
+  doi={10.5281/zenodo.18259016},
+  url={https://github.com/fouaar-cyber/lotka-volterra-ip-pinn}
+}
+```

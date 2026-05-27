@@ -1,0 +1,36 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite both the article and the software itself."
+type: software
+title: "Structurally corrected invariant-preserving neural networks for conservative dynamical systems: a statistically validated approach"
+authors:
+  - family-names: "Ouaar"
+    given-names: "Fatima"
+    email: "f.ouaar@univ-biskra.dz"
+    affiliation: "Mathematics Department, University of Biskra, Biskra, Algeria"
+repository-code: "https://github.com/fouaar-cyber/lotka-volterra-ip-pinn"
+url: "https://github.com/fouaar-cyber/lotka-volterra-ip-pinn"
+doi: "10.5281/zenodo.18259016"
+keywords:
+  - "physics-informed neural networks"
+  - "structural correction"
+  - "invariant preservation"
+  - "conservative dynamical systems"
+  - "Lotka-Volterra systems"
+  - "statistical validation"
+  - "reproducible research"
+  - "manifold projection"
+license: MIT
+license-url: "https://opensource.org/licenses/MIT"
+version: 3.0
+date-released: 2026-05-28
+preferred-citation:
+  type: article
+  title: "Structurally corrected invariant-preserving neural networks for conservative dynamical systems: a statistically validated approach"
+  authors:
+    - family-names: "Ouaar"
+      given-names: "Fatima"
+  journal: "Scientific Journal of King Faisal University: Basic and Applied Sciences"
+  year: 2026
+  volume: 27
+  article-number: 7
+  doi: "10.1007/s44523-026-00007-7"

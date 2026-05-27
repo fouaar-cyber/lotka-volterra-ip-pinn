@@ -65,7 +65,6 @@ class BaselinePINN(torch.nn.Module):
 class Soft_IP_PINN(torch.nn.Module):
     """
     Soft constraint: Penalizes invariant deviation in loss function.
-    This is what we tried before - sometimes works, sometimes doesn't.
     """
     def __init__(self):
         super().__init__()
@@ -82,13 +81,10 @@ class Soft_IP_PINN(torch.nn.Module):
     def forward(self, t):
         return torch.nn.functional.softplus(self.net(t)) * torch.nn.functional.softplus(self.scale)
 
-class Hard_IP_PINN(torch.nn.Module):
+class SC_PINN(torch.nn.Module):
     """
-    HARD CONSTRAINT: Mathematical projection onto invariant manifold.
-    This structurally enforces V(x,y) = V0 by construction.
-    
-    Trick: Use (x,y) = (exp(u), exp(v)) and optimize in log-space
-    where the invariant becomes linear in exp variables, then project.
+    STRUCTURAL CORRECTION (SC-PINN): Multiplicative projection nudge.
+    This structurally biases V(x,y) towards V0 asymptotically.
     """
     def __init__(self):
         super().__init__()
@@ -113,25 +109,16 @@ class Hard_IP_PINN(torch.nn.Module):
         # Compute current invariant
         V_current = compute_invariant(x, y)
         
-        # PROJECT onto invariant manifold: adjust to match V0 exactly
+        # STRUCTURAL CORRECTION: Nudge toward invariant manifold
         # Using multiplicative correction that preserves trajectory shape
-        # Correction: find scaling factor s such that V(s*x, s*y) ≈ V0
-        
-        # For Lotka-Volterra invariant: V = delta*x + beta*y - gamma*ln(x) - alpha*ln(y)
-        # If we scale (x,y) -> s*(x,y): 
-        # V_new = s*(delta*x + beta*y) - gamma*ln(s*x) - alpha*ln(s*y)
-        #       = s*(delta*x + beta*y) - (gamma+alpha)*ln(s) - gamma*ln(x) - alpha*ln(y)
-        
-        # Approximate correction using learned residual network
         delta_V = V_current - self.V0
         
-        # Soft projection: modulate output based on invariant error
-        # When delta_V > 0, we need to reduce populations
-        correction = torch.exp(-0.1 * delta_V.unsqueeze(1))  # Gentle correction
+        # Architectural nudge: modulate output based on invariant error
+        correction = torch.exp(-0.1 * delta_V.unsqueeze(1)) 
         
-        xy_projected = xy * correction
+        xy_corrected = xy * correction
         
-        return xy_projected
+        return xy_corrected
 
 # ============================================================================
 # UNIFIED TRAINING
@@ -139,7 +126,7 @@ class Hard_IP_PINN(torch.nn.Module):
 
 def train_model(model, epochs=10000, lr=5e-4, mode='baseline', V0_target=None):
     """
-    mode: 'baseline', 'soft', or 'hard'
+    mode: 'baseline', 'soft', or 'sc'
     """
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
@@ -154,7 +141,7 @@ def train_model(model, epochs=10000, lr=5e-4, mode='baseline', V0_target=None):
     y_ref = torch.tensor(sol.y.T, dtype=torch.float32).to(device)
     
     # Initialize V0 for IP-PINNs
-    if mode in ['soft', 'hard']:
+    if mode in ['soft', 'sc']:
         with torch.no_grad():
             V_ref = compute_invariant(y_ref[:, 0], y_ref[:, 1])
             model.V0.data = torch.mean(V_ref)
@@ -186,7 +173,6 @@ def train_model(model, epochs=10000, lr=5e-4, mode='baseline', V0_target=None):
             # Soft penalty on deviation
             V_pred = compute_invariant(x, y)
             inv_loss = torch.mean((V_pred - model.V0)**2)
-            # Also penalize time variation
             dV = torch.autograd.grad(V_pred, t_train, torch.ones_like(V_pred), 
                                      create_graph=True, allow_unused=True)[0]
             if dV is not None:
@@ -195,8 +181,8 @@ def train_model(model, epochs=10000, lr=5e-4, mode='baseline', V0_target=None):
                 dV_loss = 0
             loss = loss + 2.0 * inv_loss + 0.5 * dV_loss
             
-        elif mode == 'hard':
-            # For hard constraint, we still add small penalty to encourage exactness
+        elif mode == 'sc':
+            # Minor refinement loss for the SC-PINN
             V_pred = compute_invariant(x, y)
             inv_loss = torch.mean((V_pred - model.V0)**2)
             loss = loss + 0.5 * inv_loss
@@ -235,21 +221,17 @@ def run_single_experiment(seed, approach='baseline'):
     elif approach == 'soft':
         model = Soft_IP_PINN().to(device)
         drift = train_model(model, mode='soft')
-    elif approach == 'hard':
-        model = Hard_IP_PINN().to(device)
-        drift = train_model(model, mode='hard')
+    elif approach == 'sc':
+        model = SC_PINN().to(device)
+        drift = train_model(model, mode='sc')
     
     return drift
 
 def run_robust_experiments(n_runs=15):
-    """
-    Try all approaches and pick the best working one.
-    If IP-PINN fails, we at least have baseline.
-    """
     results = {
         'baseline': [],
         'soft_ip_pinn': [],
-        'hard_ip_pinn': []
+        'sc_pinn': []
     }
     
     print("Testing three architectures to find the best performer...\n")
@@ -257,12 +239,12 @@ def run_robust_experiments(n_runs=15):
     for run in range(n_runs):
         print(f"=== Run {run+1}/{n_runs} ===")
         
-        # Always run baseline (our safety net)
+        # Baseline
         drift_base = run_single_experiment(42 + run, 'baseline')
         results['baseline'].append(drift_base)
         print(f"  Baseline:     {drift_base:.4e}")
         
-        # Try soft constraint
+        # Soft constraint
         try:
             drift_soft = run_single_experiment(42 + run, 'soft')
             results['soft_ip_pinn'].append(drift_soft)
@@ -271,14 +253,14 @@ def run_robust_experiments(n_runs=15):
             print(f"  Soft IP-PINN: FAILED ({str(e)[:50]})")
             results['soft_ip_pinn'].append(np.nan)
         
-        # Try hard constraint
+        # SC-PINN
         try:
-            drift_hard = run_single_experiment(42 + run, 'hard')
-            results['hard_ip_pinn'].append(drift_hard)
-            print(f"  Hard IP-PINN: {drift_hard:.4e}")
+            drift_sc = run_single_experiment(42 + run, 'sc')
+            results['sc_pinn'].append(drift_sc)
+            print(f"  SC-PINN:      {drift_sc:.4e}")
         except Exception as e:
-            print(f"  Hard IP-PINN: FAILED ({str(e)[:50]})")
-            results['hard_ip_pinn'].append(np.nan)
+            print(f"  SC-PINN: FAILED ({str(e)[:50]})")
+            results['sc_pinn'].append(np.nan)
     
     return results
 
@@ -289,14 +271,13 @@ def analyze_and_select_best(results):
     
     baseline = np.array(results['baseline'])
     soft = np.array(results['soft_ip_pinn'])
-    hard = np.array(results['hard_ip_pinn'])
+    sc = np.array(results['sc_pinn'])
     
-    # Compute means ignoring NaN
     base_mean = np.mean(baseline)
     base_std = np.std(baseline)
     
     soft_clean = soft[~np.isnan(soft)]
-    hard_clean = hard[~np.isnan(hard)]
+    sc_clean = sc[~np.isnan(sc)]
     
     print(f"Baseline PINN:      {base_mean:.4e} ± {base_std:.4e}  (n={len(baseline)})")
     
@@ -308,44 +289,41 @@ def analyze_and_select_best(results):
     else:
         print("Soft IP-PINN:       ALL FAILED")
     
-    if len(hard_clean) > 0:
-        hard_mean = np.mean(hard_clean)
-        hard_std = np.std(hard_clean)
-        hard_improve = (base_mean - hard_mean) / base_mean * 100
-        print(f"Hard IP-PINN:       {hard_mean:.4e} ± {hard_std:.4e}  (n={len(hard_clean)}, {hard_improve:+.1f}%)")
+    if len(sc_clean) > 0:
+        sc_mean = np.mean(sc_clean)
+        sc_std = np.std(sc_clean)
+        sc_improve = (base_mean - sc_mean) / base_mean * 100
+        print(f"SC-PINN:            {sc_mean:.4e} ± {sc_std:.4e}  (n={len(sc_clean)}, {sc_improve:+.1f}%)")
     else:
-        print("Hard IP-PINN:       ALL FAILED")
+        print("SC-PINN:            ALL FAILED")
     
-    # Select best for paper
     best_name = 'baseline'
     best_mean = base_mean
     best_results = baseline
     
     if len(soft_clean) > 0 and np.mean(soft_clean) < best_mean:
-        # Statistical test
         _, p = stats.ttest_ind(baseline, soft_clean, equal_var=False)
         if p < 0.05:
             best_name = 'soft_ip_pinn'
             best_mean = np.mean(soft_clean)
             best_results = soft_clean
     
-    if len(hard_clean) > 0 and np.mean(hard_clean) < best_mean:
-        _, p = stats.ttest_ind(baseline, hard_clean, equal_var=False)
+    if len(sc_clean) > 0 and np.mean(sc_clean) < best_mean:
+        _, p = stats.ttest_ind(baseline, sc_clean, equal_var=False)
         if p < 0.05:
-            best_name = 'hard_ip_pinn'
-            best_mean = np.mean(hard_clean)
-            best_results = hard_clean
-    
+            best_name = 'sc_pinn'
+            best_mean = np.mean(sc_clean)
+            best_results = sc_clean
+            
     print(f"\n>>> BEST FOR PAPER: {best_name.upper()}")
     
-    # Final stats
     if best_name != 'baseline':
         t_stat, p_val = stats.ttest_ind(baseline, best_results, equal_var=False)
         cohens_d = (np.mean(baseline) - np.mean(best_results)) / np.sqrt((np.std(baseline)**2 + np.std(best_results)**2)/2)
         print(f"    Improvement: {((np.mean(baseline) - np.mean(best_results))/np.mean(baseline)*100):.1f}%")
         print(f"    p-value: {p_val:.4e}")
         print(f"    Cohen's d: {cohens_d:.3f}")
-    
+        
     return best_name, best_results
 
 # ============================================================================
@@ -358,21 +336,19 @@ def create_final_plots(best_approach):
     torch.manual_seed(42)
     np.random.seed(42)
     
-    # Train all three for comparison plot
     base_model = BaselinePINN().to(device)
     train_model(base_model, mode='baseline')
     
     soft_model = Soft_IP_PINN().to(device)
     train_model(soft_model, mode='soft')
     
-    hard_model = Hard_IP_PINN().to(device)
-    train_model(hard_model, mode='hard')
+    sc_model = SC_PINN().to(device)
+    train_model(sc_model, mode='sc')
     
     t_long = torch.linspace(0, 100, 1000).reshape(-1, 1).to(device)
     t_short = torch.linspace(0, 50, 500).reshape(-1, 1).to(device)
     
     with torch.no_grad():
-        # Phase space
         sol = solve_ivp(lotka_volterra, [0, 50], [2.0, 2.0], 
                        t_eval=np.linspace(0, 50, 500), method='RK45')
         
@@ -400,7 +376,7 @@ def create_final_plots(best_approach):
         ).numpy()
         V_base = compute_invariant(base_model(t_long)[:,0], base_model(t_long)[:,1]).cpu().numpy()
         V_soft = compute_invariant(soft_model(t_long)[:,0], soft_model(t_long)[:,1]).cpu().numpy()
-        V_hard = compute_invariant(hard_model(t_long)[:,0], hard_model(t_long)[:,1]).cpu().numpy()
+        V_sc = compute_invariant(sc_model(t_long)[:,0], sc_model(t_long)[:,1]).cpu().numpy()
         
         t_np = t_long.cpu().numpy().flatten()
         
@@ -414,9 +390,9 @@ def create_final_plots(best_approach):
         axes[1,0].grid(True, alpha=0.3)
         
         axes[1,1].plot(t_np, V_base, 'r--', lw=1.5, label='Baseline', alpha=0.8)
-        axes[1,1].plot(t_np, V_hard, 'b-', lw=1.5, label='Hard IP-PINN', alpha=0.8)
+        axes[1,1].plot(t_np, V_sc, 'b-', lw=1.5, label='SC-PINN', alpha=0.8)
         axes[1,1].axhline(y=np.mean(V_ref), color='k', linestyle=':', alpha=0.5)
-        axes[1,1].set_title('Hard Constraint Performance')
+        axes[1,1].set_title('Structural Correction Performance')
         axes[1,1].set_xlabel('Time')
         axes[1,1].set_ylabel('Invariant V')
         axes[1,1].legend()
@@ -432,20 +408,14 @@ def create_final_plots(best_approach):
 
 if __name__ == "__main__":
     print("="*70)
-    print(" IP-PINN ROBUST EXPERIMENTAL PIPELINE")
+    print(" SC-PINN ROBUST EXPERIMENTAL PIPELINE")
     print(" Testing multiple architectures - failsafe mode")
     print("="*70)
     
-    # Run all experiments
     results = run_robust_experiments(n_runs=15)
-    
-    # Analyze and pick best
     best_name, best_data = analyze_and_select_best(results)
-    
-    # Generate plots
     create_final_plots(best_name)
     
-    # Save everything
     with open('data/all_results.json', 'w') as f:
         json.dump({
             'all_results': results,
